@@ -2,6 +2,7 @@ begin rule "output identity"
     output.patent.ba_name := "AZ" 
 end rule
 
+
 begin rule "identifiers"
     if input.patent.accessions then
         identity_items := input.patent.accessions as list 
@@ -864,27 +865,29 @@ begin rule "facts"
 	
 	
 	######### START FACT: PATENTS ############################
-    if input.patent.@tsip:action then 
-        fact_obj := fact_get("action",input.patent.@tsip:action,"7","","733","null","patent",[1])
-        list_add(facts,fact_obj)
-    end if 
-    
+    if input.patent then 
+        if input.patent.@tsip:action then 
+            fact_obj := fact_get("action",input.patent.@tsip:action,"7","","733","null","patent",[1])
+            list_add(facts,fact_obj)
+        end if 
+        
 
-    if input.patent.@tsip:cc then 
-        fact_obj := fact_get("countryCode",input.patent.@tsip:cc,"7","","1","null","patent",[1])
-        list_add(facts,fact_obj)
-    end if 
-    
+        if input.patent.@tsip:cc then 
+            fact_obj := fact_get("countryCode",input.patent.@tsip:cc,"7","","1","null","patent",[1])
+            list_add(facts,fact_obj)
+        end if 
+        
 
-    if input.patent.@tsip:ki then 
-        fact_obj := fact_get("kindCode",input.patent.@tsip:ki,"7","","2","null","patent",[1])
-        list_add(facts,fact_obj)
-    end if 
-    
+        if input.patent.@tsip:ki then 
+            fact_obj := fact_get("kindCode",input.patent.@tsip:ki,"7","","2","null","patent",[1])
+            list_add(facts,fact_obj)
+        end if 
+        
 
-    if input.patent.@tsip:se then 
-        fact_obj := fact_get("documentNumber",input.patent.@tsip:se,"7","","3","null","patent",[1])
-        list_add(facts,fact_obj)
+        if input.patent.@tsip:se then 
+            fact_obj := fact_get("documentNumber",input.patent.@tsip:se,"7","","3","null","patent",[1])
+            list_add(facts,fact_obj)
+        end if 
     end if 
 	######### END LOGICAL UNIT: PATENTS ############################
 	
@@ -1256,8 +1259,6 @@ begin rule "relationships"
             list_add(relationships, relationship_node)
             array_index := array_index + 1
         end loop 
-
-
     end if 
     ######### END FACT: INVENTORS ############################
 
@@ -1406,7 +1407,6 @@ begin rule "relationships"
             list_add(classification_relationships, relationship_node)
             array_index := array_index + 1
         end loop 
-
     end if 
     ######### END FACT: CLASSIFICATIONCPCCURRENT ############################
     
@@ -1535,8 +1535,6 @@ begin rule "relationships"
             
             array_index := array_index  + 1 
         end loop 
-
-
     end if 
     ######### END FACT: CLASSIFICATIONCPC ############################
 
@@ -1798,7 +1796,6 @@ begin rule "relationships"
             
             array_index := array_index + 1
         end loop 
-
     end if 
     ######### END FACT: CLASSIFICATIONIPCCURRENT ############################
     
@@ -2084,6 +2081,7 @@ begin rule "relationships"
 
     output.patent.relationships := relationships
 end rule
+
 
 begin rule "outer nodes"
     output.patent.lineage := ["urn:asset:7:e59c99fd-5916-420a-9a78-3131eeeeabd4"]  
