@@ -77,7 +77,6 @@ begin rule "facts"
     end if 
     ######### END LOGICAL UNIT: ABSTRACTS ############################
     
-    
     ######### START FACT: METADATA ############################)
     if input.patent.metaData then
         metaData := input.patent.metaData
@@ -111,7 +110,6 @@ begin rule "facts"
         list_add(facts,fact_get("literatureCitations.content",xmlString ,"7","85","86","null","literatureCitations", [1, 1]))
     end if 
     ######### END LOGICAL UNIT: LITERATURECITATIONS ############################
-    
     
     ######### START FACT: MISCELLANEOUS ############################)
     if input.patent.miscellaneous then 
@@ -863,7 +861,6 @@ begin rule "facts"
     end if 
 	######### END LOGICAL UNIT: PUBLICATIONS ############################
 	
-	
 	######### START FACT: PATENTS ############################
     if input.patent then 
         if input.patent.@tsip:action then 
@@ -890,29 +887,130 @@ begin rule "facts"
         end if 
     end if 
 	######### END LOGICAL UNIT: PATENTS ############################
-	
-	######### START FACT: TITLES ############################
-    if input.patent.titles then
-        items := input.patent.titles
-        
+
+    ######### START FACT: TITLES ############################
+    if input.patent.titles then 
+        titles := input.patent.titles
+        items := titles as list 
         xmlString := "<titles tsip:action='new'>"
-    
-        if items.titleTsxm then 
-            fact_obj := fact_get("titles.title",items.titleTsxm,"7","29","30","null","titles",[1,1])
-            fact_obj.subSource := "tsxm"
-            fact_obj.language := "en"
-            fact_obj.input := "original"
-            list_add(facts, fact_obj)
-            xmlString := concat([xmlString, items.xml])
-        end if 
+
+        array_index := 1 
+        for item in items loop 
+            if item.title then 
+                fact_obj := fact_get("titles.title",item.title,"7","29","30","standard","titles",[1,1])
+                fact_obj.language := "en"
+                fact_obj.input := "original"
+                list_add(facts,fact_obj)
+            end if 
+
+
+            if item.titleTsxm then 
+                fact_obj := fact_get("titles.title",item.titleTsxm,"7","29","30","tsxm","titles",[1,1])
+                fact_obj.language := "null"
+                fact_obj.input := "null"
+                list_add(facts,fact_obj)
+            end if       
+
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
 
         xmlString := concat([xmlString, "</titles>"])
-        fact_obj := fact_get("titles.content",xmlString,"7","29","31","null","titles",[1,1])
-        fact_obj.input := "null"
+        fact_obj := fact_get("titles.content",xmlString,"7","29","31","","titles",[1,1])
         fact_obj.language := "null"
-        list_add(facts, fact_obj)
-    end if	
-    ######### END LOGICAL UNIT: TITLES ############################
+        fact_obj.input := "null"
+        list_add(facts,fact_obj)
+    end if 
+    ######### END FACT: TITLES ############################
+
+    ######### START FACT: AMENDMENTS ############################
+    if input.patent.amendments then 
+        amendments := input.patent.amendments
+        items := amendments as list 
+        xmlString := "<amendments  tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</amendments>"])
+        list_add(facts,fact_get("amendments.content",xmlString,"7","11","12","","amendments",[1, 1]))
+    end if 
+    ######### END FACT: AMENDMENTS ############################
+
+    ######### START FACT: DESCRIPTIONSORIGINAL ############################
+    if input.patent.descriptionsOriginal then 
+        descriptionsOriginal := input.patent.descriptionsOriginal
+        items := descriptionsOriginal as list 
+        xmlString := "<descriptionsOriginal tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</descriptionsOriginal>"])
+        list_add(facts,fact_get("descriptionsOriginal.content",xmlString,"7","75","76","","descriptionsOriginal",[1, 1]))
+    end if 
+    ######### END FACT: DESCRIPTIONSORIGINAL ############################
+
+    ######### START FACT: CLAIMED ############################
+    if input.patent.claimed then 
+        claimed := input.patent.claimed
+        items := claimed as list 
+        xmlString := "<claimed  tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop 
+            if item.claims then 
+                fact_obj := fact_get("claimed.claims",item.claims,"7","32","33","standard","claimed",[1,1,array_index])
+                fact_obj.language := "en"
+                fact_obj.input := "null"
+                list_add(facts,fact_obj)
+            end if 
+            
+
+            if item.claimsTsxm then 
+                fact_obj := fact_get("claimed.claims",item.claimsTsxm,"7","32","33","tsxm","claimed",[1,1,array_index])
+                fact_obj.language := "en"
+                fact_obj.input := "null"
+                list_add(facts,fact_obj)
+            end if 
+
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</claimed>"])
+        fact_obj := fact_get("claimed.content",xmlString,"7","32","711","","claimed",[1,1])
+        fact_obj.language := "null"
+        fact_obj.input := "null"
+        list_add(facts,fact_obj)     
+    end if 
+    ######### END FACT: CLAIMED ############################
+
+    ######### START FACT: CORRECTIONS ############################
+    if input.patent.corrections then 
+        corrections := input.patent.corrections
+        items := corrections as list 
+        xmlString := "<corrections  tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</corrections>"])
+        fact_obj := fact_get("corrections.content",xmlString,"7","21","22","","corrections",[1,1])
+        fact_obj.language := "null"
+        fact_obj.input := "null"
+        list_add(facts,fact_obj)
+    end if 
+    ######### END FACT: CORRECTIONS ############################
 
     output.patent.factValues := facts
 end rule
@@ -2063,7 +2161,7 @@ begin rule "relationships"
 				
 				xmlString := concat([xmlString, "</examiners>"])
 
-				fact_obj := fact_get("examiners.examiner.content",xmlString,"7","376","401","","examiners.examiner",[1,1])
+				fact_obj := fact_get("examiners.examiner.content",xmlString,"7","376","401","","examiners.examiner",[1,1, array_index])
 				fact_obj.language := "null"
 				fact_obj.input := "null"
 				list_add(add_facts,fact_obj)
