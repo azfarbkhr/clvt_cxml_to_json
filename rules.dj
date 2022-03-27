@@ -1,0 +1,2103 @@
+begin rule "output identity"
+    output.patent.ba_name := "AZ" 
+end rule
+
+begin rule "identifiers"
+    if input.patent.accessions then
+        identity_items := input.patent.accessions as list 
+        identifiers := list_new()
+        
+        for idnt_item in identity_items loop 
+            identity := {}
+            if (idnt_item.@tsip:src = "wila") then 
+                identity.sourcePGUID := "urn:source:000000000000000000000000000021"
+            end if
+            if (idnt_item.@tsip:src = "tscm") then 
+                identity.sourcePGUID := "urn:source:000000000000000000000000000022"    
+            end if 
+        
+            identity.updatedBy := ""
+            identity.wipFlag := false
+            identity.confidence := 100
+            identity.rank := 1
+            identity.action := ""
+            identity.value := idnt_item.accession
+            identity.scheme := idnt_item.@tsip:type
+    		identity.sourceName := idnt_item.@tsip:src 
+    		
+            list_add(identifiers, identity)
+        end loop 
+        
+        output.patent.identifiers := identifiers 
+    end if
+end rule
+
+
+begin rule "facts"
+    facts := list_new()
+    
+    ######### START LOGICAL UNIT: ABSTRACTS ############################
+    if input.patent.abstracts then 
+        abstracts := input.patent.abstracts
+        xmlString := "<abstracts tsip:action='new'>"
+        
+        if abstracts.abstract then 
+            items := abstracts as list 
+            
+            array_index := 1 
+            for item in items loop 
+                fact_obj := fact_get("abstracts.abstract.text",item.xml,"7","692","717","standard","abstracts.abstract",[1, 1, array_index])
+                list_add(facts,fact_obj)
+                xmlString := concat([xmlString, item.xml])
+                array_index := array_index + 1
+            end loop 
+        end if 
+        
+        
+        if abstracts.abstractTsxm then 
+            xmlString := concat([xmlString, "<abstractTsxm tsip:lang='", abstracts.abstractTsxm.@tsip:lang, "' tsip:input='", abstracts.abstractTsxm.@tsip:input, "'>"])
+            if abstracts.abstractTsxm.@tsxm:id then 
+                list_add(facts,fact_get("abstracts.abstract.id",abstracts.abstractTsxm.@tsxm:id,"7","692","693","null","abstracts.abstract",[1, 1, 1]))
+            end if 
+            
+            items := abstracts.abstractTsxm as list
+            array_index := 1
+            for item in items loop 
+                list_add(facts,fact_get("abstracts.abstract.text",item.xml,"7","692","717","standard","abstracts.abstract",[1, 1, array_index]))
+                xmlString := concat([xmlString, item.xml])
+                array_index := array_index + 1
+            end loop 
+            xmlString := concat([xmlString, "</abstractTsxm>"])
+        end if 
+        
+        
+        xmlString := concat([xmlString, "</abstracts>"])
+        list_add(facts,fact_get("abstracts.content",xmlString,"7","691","727","null","abstracts",[1, 1]))
+    end if 
+    ######### END LOGICAL UNIT: ABSTRACTS ############################
+    
+    
+    ######### START FACT: METADATA ############################)
+    if input.patent.metaData then
+        metaData := input.patent.metaData
+        items := metaData as list 
+        
+        xmlString := "<metaData tsip:action='new'>"
+        
+        array_index := 1
+        for item in items loop
+            xmlString := concat([xmlString, item.xml])
+        end loop 
+        
+        xmlString := concat([xmlString, "</metaData>"])
+        list_add(facts,fact_get("metadata.content", xmlString,"7","83","84","null","metadata",[1, 1]))
+    end if 
+    ######### END FACT: METADATA ############################
+
+    ######### START LOGICAL UNIT: LITERATURECITATIONS ############################
+    if input.patent.literatureCitations then 
+        literatureCitations := input.patent.literatureCitations
+        items := literatureCitations as list 
+        
+        xmlString := "<literatureCitations tsip:action='new'>" 
+
+        array_index := 1
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+        end loop
+        
+        xmlString := concat([xmlString, "</literatureCitations>"])
+        list_add(facts,fact_get("literatureCitations.content",xmlString ,"7","85","86","null","literatureCitations", [1, 1]))
+    end if 
+    ######### END LOGICAL UNIT: LITERATURECITATIONS ############################
+    
+    
+    ######### START FACT: MISCELLANEOUS ############################)
+    if input.patent.miscellaneous then 
+        miscellaneous := input.patent.miscellaneous
+        items := miscellaneous as list 
+        xmlString := "<miscellaneous>"
+        
+        array_index := 1 
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+        end loop 
+        
+        xmlString := concat([xmlString, "</miscellaneous>"])
+        list_add(facts,fact_get("miscellaneous.content",xmlString ,"7","81","82","null","miscellaneous",[1, 1]))
+    end if 
+    ######### END FACT: MISCELLANEOUS ############################
+
+    ######### START FACT: IMAGEREFS ############################
+    if input.patent.imageRefs then 
+        imageRefs := input.patent.imageRefs
+        items := imageRefs as list 
+        xmlString := concat(["<imageRefs tsip:action='", imageRefs.@tsip:action, "' tsip:src='", imageRefs.@tsip:src,"'>"])
+
+        array_index := 1 
+        for item in items loop 
+            xmlString := concat([xmlString, item.xml])
+        end loop 
+
+        xmlString := concat([xmlString, "</imageRefs>"])
+        list_add(facts,fact_get("Imagerefs.content",xmlString ,"7","27","28","null","imageRefs",[1, 1]))
+    end if 
+    ######### END FACT: IMAGEREFS ############################
+
+    ######### START FACT: UPDATES ############################
+    if input.patent.updates then 
+        updates := input.patent.updates
+        items := updates as list 
+        xmlString := "<updates tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop
+            list_add(facts,fact_get("updates.update.content", item.update, "7","88","251","null","updates.update", [1, 1, array_index]))
+            
+            if item.@tsip:src then 
+                list_add(facts,fact_get("updates.update.source",item.@tsip:src,"7","88","89","null","updates.update",[1, 1, array_index]))
+            end if 
+            
+            if item.@tsip:type then 
+                list_add(facts,fact_get("updates.update.type",item.@tsip:type,"7","88","90","null","updates.update",[1, 1, array_index]))
+            end if 
+
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</updates>"])
+        list_add(facts,fact_get("updates.content",xmlString,"7","87","91","null","updates",[1, 1]))
+    end if 
+    ######### END FACT: UPDATES ############################
+    
+    ######### START FACT: APPLICATIONS ############################
+    if input.patent.applications then 
+        applications := input.patent.applications
+        items := applications as list 
+        xmlString := "<applications  tsip:action='new'>"
+
+        array_index := 1 
+        for item in items loop 
+        
+            if item.@tsip:cc then 
+                list_add(facts,fact_get("applications.application.patentCountry",item.@tsip:cc,"7","93","94","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.isRep then 
+                list_add(facts,fact_get("applications.application.isRep",item.isRep,"7","93","99","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:ki then 
+                list_add(facts,fact_get("applications.application.patentKind",item.@tsip:ki,"7","93","95","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.linkageType then 
+                list_add(facts,fact_get("applications.application.linkageType",item.linkageType,"7","93","100","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.otherSe then 
+                list_add(facts,fact_get("applications.application.otherSerial",item.otherSe,"7","93","101","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:priorityCode then 
+                list_add(facts,fact_get("applications.application.priorityCode",item.@tsip:priorityCode,"7","93","96","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:relationCode then 
+                list_add(facts,fact_get("applications.application.wilaRelationCode",item.@tsip:relationCode,"7","93","98","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:se then 
+                list_add(facts,fact_get("applications.application.serial",item.@tsip:se,"7","93","97","null","applications.application",[1, 1, array_index]))
+            end if 
+
+            if item.textDescription then 
+                list_add(facts,fact_get("applications.application.textDescription",item.textDescription,"7","93","116","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+            if item.@tsip:lang then 
+                    list_add(facts,fact_get("applications.application.applang",item.@tsip:lang,"7","93","830","null","applications.application",[1, 1, array_index]))
+            end if 
+            
+            
+            app_id_items := item.applicationId as list 
+            
+            for app_id_item in app_id_items loop 
+                if app_id_item._internal_ = "appId" then 
+                    list_add(facts,fact_get("applications.application.applicationId.appId",app_id_item.appId,"7","102","104","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "applicationYear" then 
+                    list_add(facts,fact_get("applications.application.applicationId.applicationYear",app_id_item.applicationYear,"7","102","106","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "countryCode" then 
+                    list_add(facts,fact_get("applications.application.applicationId.countryCode",app_id_item.countryCode,"7","102","107","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "date" then 
+                    list_add(facts,fact_get("applications.application.applicationId.date", app_id_item.date,"7","102","111","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "error" then 
+                    list_add(facts,fact_get("applications.application.applicationId.appIdError",app_id_item.error,"7","102","103","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "kindCode" then 
+                    list_add(facts,fact_get("applications.application.applicationId.kindCode.src",app_id_item.kindCode.@tsip:src,"7","108","110","null","applications.application.applicationId.kindCode",[1, 1, array_index, 1, 1]))
+                    list_add(facts,fact_get("applications.application.applicationId.kindCode.text",app_id_item.kindCode,"7","108","109","null","applications.application.applicationId.kindCode",[1, 1, array_index, 1]))
+                end if 
+                
+            
+                if app_id_item._internal_ = "number" then 
+                    list_add(facts,fact_get("applications.application.applicationId.number.form",app_id_item.number.@tsip:form,"7","112","114","null","applications.application.applicationId.number",[1, 1, array_index, 1, 1]))
+                    list_add(facts,fact_get("applications.application.applicationId.number.text",app_id_item.number,"7","112","113","null","applications.application.applicationId.number",[1, 1, array_index, 1]))
+                end if 
+                
+                if app_id_item._internal_ = "permId" then 
+                    list_add(facts,fact_get("applications.application.applicationId.permId",app_id_item.permId,"7","102","105","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if 
+                
+                if app_id_item._internal_ = "seriesCode" then 
+                    list_add(facts,fact_get("applications.application.applicationId.seriesCode",app_id_item.seriesCode,"7","102","115","null","applications.application.applicationId",[1, 1, array_index, 1]))
+                end if
+            end loop 
+    
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</applications>"])
+        list_add(facts,fact_get("applications.content",xmlString,"7","92","117","null","applications",[1, 1]))
+    end if 
+    ######### END FACT: APPLICATIONS ############################
+    
+    ######### START FACT: RELATEDS ############################
+    if input.patent.relateds then 
+        relateds := input.patent.relateds
+        items := relateds as list 
+        xmlString := "<relateds  tsip:action='new'>"
+        
+        array_index := 1 
+        for item in items loop 
+            #if item._internal_ = "related" then 
+                if item.isRep then 
+                    fact_obj := fact_get("relateds.related.disRep",item.isRep,"7","134","138","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.linkageType then 
+                    fact_obj := fact_get("relateds.related.linkageType",item.linkageType,"7","134","139","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.parentStatus then 
+                    fact_obj := fact_get("relateds.related.parentStatus",item.parentStatus,"7","134","135","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.@tsip:priorityCode then 
+                    fact_obj := fact_get("relateds.related.priorityCode",item.@tsip:priorityCode,"7","134","136","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.@wila:relationCode then 
+                    fact_obj := fact_get("relateds.related.wilarelationCode",item.@wila:relationCode,"7","134","137","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.textDescription then 
+                    fact_obj := fact_get("relateds.related.contentDescription",item.textDescription,"7","134","152","null","relateds.related",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+                
+                if item.documentId then 
+                    document_id_items := item.documentId as list 
+                    
+                    for document_id_item in document_id_items loop 
+                        if document_id_item._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.related.document.countryCode",document_id_item.countryCode,"7","153","159","null","relateds.related.document",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if document_id_item._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.related.document.date",document_id_item.date,"7","153","162","null","relateds.related.document",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if document_id_item._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.related.document.error",document_id_item.error,"7","153","154","null","relateds.related.document",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                        
+                        if document_id_item.kindCode.@tsip:src then 
+                            fact_obj := fact_get("relateds.related.document.kindCode.Source",document_id_item.kindCode.@tsip:src,"7","160","161","null","relateds.related.document.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                        if document_id_item._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.related.document.kindCode.content",document_id_item.kindCode,"7","160","255","null","relateds.related.document.kindCode",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if document_id_item._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.related.document.number.Form",document_id_item.number.@tsip:form,"7","157","158","null","relateds.related.document.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                    
+                            fact_obj := fact_get("relateds.related.document.number.content",document_id_item.number,"7","157","254","null","relateds.related.document.number",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if document_id_item._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.related.document.permId",document_id_item.permId,"7","153","156","null","relateds.related.document",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if document_id_item._internal_ = "pubId" then 
+                            fact_obj := fact_get("relateds.related.document.pubId",document_id_item.pubId,"7","153","155","null","relateds.related.document",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    end loop 
+                end if 
+                
+                if item.applicationId then 
+                    application_id_items := item.applicationId as list 
+                    
+                    for application_id_item in application_id_items loop 
+                    
+                        if application_id_item._internal_ = "appId" then 
+                            fact_obj := fact_get("relateds.related.application.appID",application_id_item.appId,"7","140","142","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "applicationYear" then 
+                            fact_obj := fact_get("relateds.related.application.applicationYear",application_id_item.applicationYear,"7","140","144","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.related.application.countryCode",application_id_item.countryCode,"7","140","145","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.related.application.date",application_id_item.date,"7","140","146","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.related.application.error",application_id_item.error,"7","140","141","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item.kindCode.@tsip:src then 
+                            fact_obj := fact_get("relateds.related.application.kindCode.Source",application_id_item.kindCode.@tsip:src,"7","149","150","null","relateds.related.application.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.related.application.kindCode.content",application_id_item.kindCode,"7","149","253","null","relateds.related.application.kindCode",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.related.application.number.Form",application_id_item.number.@tsip:form,"7","147","148","null","relateds.related.application.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                      
+                            fact_obj := fact_get("relateds.related.application.number.content",application_id_item.number,"7","147","252","null","relateds.related.application.number",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.related.application.permId",application_id_item.permId,"7","140","143","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                    
+                        if application_id_item._internal_ = "seriesCode" then 
+                            fact_obj := fact_get("relateds.related.application.seriesCode",application_id_item.seriesCode,"7","140","151","null","relateds.related.application",[1,1,array_index, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                    end loop 
+                end if 
+            
+            
+            if item._internal = "relatedAscontent" then 
+                if item.@tsip:cc then 
+                    fact_obj := fact_get("relateds.relatedAscontent.countryCode",item.@tsip:cc,"7","214","216","null","relateds.relatedAscontent",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.@tsip:ki then 
+                    fact_obj := fact_get("relateds.relatedAscontent.kindCode",item.@tsip:ki,"7","214","218","null","relateds.relatedAscontent",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.refId then 
+                    fact_obj := fact_get("relateds.relatedAscontent.refId",item.refId,"7","214","215","null","relateds.relatedAscontent",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.@tsip:se then 
+                    fact_obj := fact_get("relateds.relatedAscontent.seriesCode",item.@tsip:se,"7","214","217","null","relateds.relatedAscontent",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+            end if 
+            
+            if item._internal_ = "relatedParentChild" then 
+            
+                        
+                if item.parent.parentStatus then 
+                    fact_obj := fact_get("relateds.relatedParentChild.parent.parentStatus",item.parent.parentStatus,"7","189","190","null","relateds.relatedParentChild.parent",[1,1,array_index, 1])
+                    list_add(facts,fact_obj)
+                end if 
+                
+                
+                if item.@tsip:priorityCode then 
+                    fact_obj := fact_get("relateds.relatedParentChild.priorityCode",item.@tsip:priorityCode,"7","163","164","null","relateds.relatedParentChild",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.@wila:relationCode then 
+                    fact_obj := fact_get("relateds.relatedParentChild.wilarelationCode",item.@wila:relationCode,"7","163","165","null","relateds.relatedParentChild",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+            
+                if item.textDescription then 
+                    fact_obj := fact_get("relateds.relatedParentChild.contentDescription",item.textDescription,"7","163","213","null","relateds.relatedParentChild",[1,1,array_index])
+                    list_add(facts,fact_obj)
+                end if 
+                
+                
+                if item.child.applicationId then 
+                    items_child_applicationId := item.child.applicationId as list 
+                    
+                    for item_child_applicationId in items_child_applicationId loop 
+
+                
+                        if item_child_applicationId._internal_ = "appId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.appid",item_child_applicationId.appId,"7","167","169","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "applicationYear" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.applicationYear",item_child_applicationId.applicationYear,"7","167","171","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.countryCode",item_child_applicationId.countryCode,"7","167","172","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.date",item_child_applicationId.date,"7","167","173","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.error",item_child_applicationId.error,"7","167","168","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId.kindCode@tsip:src then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.kindCode.source",item_child_applicationId.kindCode.@tsip:src,"7","176","177","null","relateds.relatedParentChild.child.application.kindCode",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.kindCode.content",item_child_applicationId.kindCode,"7","176","257","null","relateds.relatedParentChild.child.application.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId.number@tsip:form then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.number.Form",item_child_applicationId.number.@tsip:form,"7","174","175","null","relateds.relatedParentChild.child.application.number",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.number.content",item_child_applicationId.number,"7","174","256","null","relateds.relatedParentChild.child.application.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.permid",item_child_applicationId.permId,"7","167","170","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_applicationId._internal_ = "seriesCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.application.seriesCode",item_child_applicationId.seriesCode,"7","167","178","null","relateds.relatedParentChild.child.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+
+                    end loop 
+                end if 
+                
+                if item.child.documentId then 
+                    items_child_documentId := item.child.documentId as list 
+                    
+                    for item_child_documentId in items_child_documentId loop 
+                
+                        if item_child_documentId._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.countryCode",item_child_documentId.countryCode,"7","179","185","null","relateds.relatedParentChild.child.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.date",item_child_documentId.date,"7","179","188","null","relateds.relatedParentChild.child.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.error",item_child_documentId.error,"7","179","180","null","relateds.relatedParentChild.child.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId.kindCode@tsip:src then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.kindCode.source",item_child_documentId.kindCode.@tsip:src,"7","186","187","null","relateds.relatedParentChild.child.document.kindCode",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.kindCode.content",item_child_documentId.kindCode,"7","186","259","null","relateds.relatedParentChild.child.document.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId.number@tsip:form then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.number.Form",item_child_documentId.number.@tsip:form,"7","183","184","null","relateds.relatedParentChild.child.document.number",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.number.content",item_child_documentId.number,"7","183","258","null","relateds.relatedParentChild.child.document.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.permId",item_child_documentId.permId,"7","179","182","null","relateds.relatedParentChild.child.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_child_documentId._internal_ = "pubId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.child.document.pubId",item_child_documentId.pubId,"7","179","181","null","relateds.relatedParentChild.child.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                    end loop 
+                end if 
+                
+                
+                if item.parent.applicationId then 
+                    items_parent_applicationId := item.parent.applicationId as list 
+                    
+                    for item_parent_applicationId in items_parent_applicationId loop 
+                        if item_parent_applicationId._internal_ = "appId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.docdbAppId",item_parent_applicationId.appId,"7","191","193","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "applicationYear" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.applicationYear",item_parent_applicationId.applicationYear,"7","191","195","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.countryCode",item_parent_applicationId.countryCode,"7","191","196","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.date",item_parent_applicationId.date,"7","191","197","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.error",item_parent_applicationId.error,"7","191","192","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId.kindCode@tsip:src then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.kindCode.source",item_parent_applicationId.kindCode.@tsip:src,"7","200","201","null","relateds.relatedParentChild.parent.application.kindCode",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.kindCode.content",item_parent_applicationId.kindCode,"7","200","261","null","relateds.relatedParentChild.parent.application.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId.number@tsip:form then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.number.Form",item_parent_applicationId.number.@tsip:form,"7","198","199","null","relateds.relatedParentChild.parent.application.number",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.number.content",item_parent_applicationId.number,"7","198","260","null","relateds.relatedParentChild.parent.application.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_applicationId._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.application.permId",item_parent_applicationId.permId,"7","191","194","null","relateds.relatedParentChild.parent.application",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                    end loop 
+                end if 
+                
+                
+                if item.parent.documentId then 
+                    items_parent_documentId := item.parent.documentId as list 
+                    
+                    for item_parent_documentId in items_parent_documentId loop 
+
+                        if item_parent_documentId._internal_ = "countryCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.countryCode",item_parent_documentId.countryCode,"7","203","209","null","relateds.relatedParentChild.parent.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "date" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.date",item_parent_documentId.date,"7","203","212","null","relateds.relatedParentChild.parent.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "error" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.error",item_parent_documentId.error,"7","203","204","null","relateds.relatedParentChild.parent.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId.kindCode@tsip:src then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.kindCode.source",item_parent_documentId.kindCode.@tsip:src,"7","210","211","null","relateds.relatedParentChild.parent.document.kindCode",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "kindCode" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.kindCode.content",item_parent_documentId.kindCode,"7","210","263","null","relateds.relatedParentChild.parent.document.kindCode",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId.number@tsip:form then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.number.Form",item_parent_documentId.number.@tsip:form,"7","207","208","null","relateds.relatedParentChild.parent.document.number",[1, 1, array_index, 1, 1,1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "number" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.number.content",item_parent_documentId.number,"7","207","262","null","relateds.relatedParentChild.parent.document.number",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "permId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.permId",item_parent_documentId.permId,"7","203","206","null","relateds.relatedParentChild.parent.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                        
+                
+                        if item_parent_documentId._internal_ = "pubId" then 
+                            fact_obj := fact_get("relateds.relatedParentChild.parent.document.pubId",item_parent_documentId.pubId,"7","203","205","null","relateds.relatedParentChild.parent.document",[1, 1, array_index, 1, 1])
+                            list_add(facts,fact_obj)
+                        end if 
+                    end loop 
+                end if 
+            end if 
+        
+            xmlString := concat([xmlString, item.xml])
+            array_index := array_index + 1
+        end loop 
+
+        xmlString := concat([xmlString, "</relateds>"])
+        list_add(facts,fact_get("relateds.content",xmlString,"7","133","219","null","relateds",[1, 1]))
+    end if 
+    ######### END FACT: RELATEDS ############################
+
+    ######### START LOGICAL UNIT: PUBLICATIONS ############################
+    if input.patent.publications then 
+        publications := input.patent.publications as list
+        xmlString := "<publications  tsip:action='new'>"
+        
+        array_index := 1
+        for publication in publications loop
+            if publication.patentDate then
+                item := fact_get("publications.publication.patentDate.date",publication.patentDate.date,"7","61","62","null","publications.publication.patentDate",[1,1,array_index,1])
+                list_add(facts, item)
+            end if 
+            
+            if publication.patentDate.@tsip:no then
+                item := fact_get("publications.publication.patentDate.no",publication.patentDate.@tsip:no,"7","61","63","null","publications.publication.patentDate",[1,1,array_index,1])
+                list_add(facts, item)
+            end if
+            
+            if publication.@tsip:drawings then
+                item := fact_get("publications.publication.drawings",publication.@tsip:drawings,"7","35","36","null","publications.publication",[1,1,array_index])
+                list_add(facts, item)
+            end if 
+           
+            if publication.@tsip:drawingPages then 
+                item := fact_get("publications.publication.drawingPages",publication.@tsip:drawingPages,"7","35","42","null","publications.publication",[1,1,array_index])
+                list_add(facts, item)
+            end if 
+            
+            if publication.classificationIpc then        
+                item := fact_get("publications.publication.classificationIpc.action",publication.classificationIpc.@tsip:action,"7","43","44","null","publications.publication.classificationIpc",[1,1,array_index,1])
+                list_add(facts, item)
+            end if 
+            
+            if publication.classificationIpc.ipc then 
+                item := fact_get("publications.publication.classificationIpc.ipc",publication.classificationIpc.ipc,"7","43","45","null","publications.publication.classificationIpc",[1,1,array_index,1,1])
+                list_add(facts, item)
+            end if
+            
+            if publication.@tsip:lang then 
+                item := fact_get("publications.publication.language",publication.@tsip:lang,"7","35","718","null","publications.publication",[1,1,array_index])
+                list_add(facts, item)
+            end if 
+            
+            if publication.publicationFirst then   
+                item := fact_get("publications.publication.publicationFirst.date",publication.publicationFirst.date,"7","57","58","null","publications.publication.publicationFirst",[1,1,array_index,1])
+                list_add(facts, item)
+            end if   
+            
+            documents := publication.documentId as list
+            for document in documents loop
+                if (document._internal_= "date") then
+                    item := fact_get("publications.publication.document.date",document.date,"7","46","51","null","publications.publication.document",[1,1,array_index,1])
+                    list_add(facts, item)            
+                end if
+                
+                if (document._internal_= "number") then
+                    item := fact_get("publications.publication.document.number.form",document.@tsip:form,"7","54","55","null","publications.publication.document.number",[1,1,array_index,1,1])
+                    list_add(facts, item)
+                    
+                    item := fact_get("publications.publication.document.number.content",document.number,"7","54","250","null","publications.publication.document.number",[1,1,array_index,1,1])
+                    list_add(facts, item)
+                end if
+                
+                if(document._internal_= "kindCode") then
+                    item := fact_get("publications.publication.document.kindCode.content",document.kindCode,"7","52","249","null","publications.publication.document.kindCode",[1,1,array_index,1,1])
+                    list_add(facts, item)            
+                end if
+                
+                if(document._internal_= "countryCode") then
+                    item := fact_get("publications.publication.document.countryCode",document.countryCode,"7","46","50","null","publications.publication.document",[1,1,array_index,1])
+                    list_add(facts, item)            
+                end if
+            end loop
+        
+            xmlString := concat([xmlString, publication.xml])
+            array_index := array_index + 1
+        end loop   
+        
+        xmlString := concat([xmlString, "</publications>"])
+        list_add(facts,fact_get("publications.content",xmlString,"7","34","74","null","publications",[1, 1]))
+    end if 
+	######### END LOGICAL UNIT: PUBLICATIONS ############################
+	
+	
+	######### START FACT: PATENTS ############################
+    if input.patent.@tsip:action then 
+        fact_obj := fact_get("action",input.patent.@tsip:action,"7","","733","null","patent",[1])
+        list_add(facts,fact_obj)
+    end if 
+    
+
+    if input.patent.@tsip:cc then 
+        fact_obj := fact_get("countryCode",input.patent.@tsip:cc,"7","","1","null","patent",[1])
+        list_add(facts,fact_obj)
+    end if 
+    
+
+    if input.patent.@tsip:ki then 
+        fact_obj := fact_get("kindCode",input.patent.@tsip:ki,"7","","2","null","patent",[1])
+        list_add(facts,fact_obj)
+    end if 
+    
+
+    if input.patent.@tsip:se then 
+        fact_obj := fact_get("documentNumber",input.patent.@tsip:se,"7","","3","null","patent",[1])
+        list_add(facts,fact_obj)
+    end if 
+	######### END LOGICAL UNIT: PATENTS ############################
+	
+	######### START FACT: TITLES ############################
+    if input.patent.titles then
+        items := input.patent.titles
+        
+        xmlString := "<titles tsip:action='new'>"
+    
+        if items.titleTsxm then 
+            fact_obj := fact_get("titles.title",items.titleTsxm,"7","29","30","null","titles",[1,1])
+            fact_obj.subSource := "tsxm"
+            fact_obj.language := "en"
+            fact_obj.input := "original"
+            list_add(facts, fact_obj)
+            xmlString := concat([xmlString, items.xml])
+        end if 
+
+        xmlString := concat([xmlString, "</titles>"])
+        fact_obj := fact_get("titles.content",xmlString,"7","29","31","null","titles",[1,1])
+        fact_obj.input := "null"
+        fact_obj.language := "null"
+        list_add(facts, fact_obj)
+    end if	
+    ######### END LOGICAL UNIT: TITLES ############################
+
+    output.patent.factValues := facts
+end rule
+
+
+begin rule "relationships"
+    relationships := list_new()
+    classification_relationships := list_new() 
+    
+    ######### START FACT: ASSIGNEES ############################
+    if input.patent.assignees then 
+        assignees := input.patent.assignees
+        items := assignees as list 
+    
+        array_index := 1 
+        for item in items loop 
+            relationship_node := {}
+            relationship_node.relatedToIdScheme := ""
+            relationship_node.updatedBy := ""
+            relationship_node.confidence := "100"
+            relationship_node.queued := ""
+            relationship_node.parentArrayIndex := [1, 1]
+            relationship_node.predicate := "assignee_of"
+            relationship_node.sourcePGUID := "urn:source:000000000000000000000000000007"
+            relationship_node.groupPGUID := "urn:fact:patent:000000000000000000000000000303"
+            relationship_node.wipFlag := false
+            relationship_node.relatedToId := ""
+            relationship_node.factPGUID := "urn:fact:patent:000000000000000000000000000304"
+            relationship_node.action := "add"
+            relationship_node.arrayIndex := array_index 
+            add_facts := list_new()
+            
+            if item.address.addressLine.@tsip:no then 
+                list_add(add_facts,fact_get("assignees.assignee.address.addressLine.no",item.address.addressLine.@tsip:no,"7","316","318","null","assignees.assignee.address.addressLine",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.address.addressLine then 
+                list_add(add_facts,fact_get("assignees.assignee.address.addressLine.content",item.address.addressLine,"7","316","317","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.addressTotal then 
+                list_add(add_facts,fact_get("assignees.assignee.address.addressTotal",item.address.addressTotal,"7","310","311","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.city then 
+                list_add(add_facts,fact_get("assignees.assignee.address.city",item.address.city,"7","310","312","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.countryCode then 
+                list_add(add_facts,fact_get("assignees.assignee.address.countryCode",item.address.countryCode,"7","310","313","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.postalCode then 
+                list_add(add_facts,fact_get("assignees.assignee.address.postalCode",item.address.postalCode,"7","310","315","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.state then 
+                list_add(add_facts,fact_get("assignees.assignee.address.state",item.address.state,"7","310","314","null","assignees.assignee.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.@tsip:appType then 
+                list_add(add_facts,fact_get("assignees.assignee.appType",item.@tsip:appType,"7","304","305","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.assigneeCode.codeType then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeCode.codeType",item.assigneeCode.codeType,"7","339","341","null","assignees.assignee.assigneeCode",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.assigneeCode.@tsip:src then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeCode.src",item.assigneeCode.@tsip:src,"7","339","340","null","assignees.assignee.assigneeCode",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.assigneeCode then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeCode.content",item.assigneeCode,"7","339","342","null","assignees.assignee.assigneeCode",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.assigneeNumber.@tsip:src then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeNumber.src",item.assigneeNumber.@tsip:src,"7","336","337","null","assignees.assignee.assigneeNumber",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.assigneeNumber then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeNumber.content",item.assigneeNumber,"7","336","338","null","assignees.assignee.assigneeNumber",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.assigneeTotal.@tsip:form then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeTotal.form",item.assigneeTotal.@tsip:form,"7","319","321","null","assignees.assignee.assigneeTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.assigneeTotal.refId then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeTotal.refId",item.assigneeTotal.refId,"7","319","322","null","assignees.assignee.assigneeTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.assigneeTotal then 
+                list_add(add_facts,fact_get("assignees.assignee.assigneeTotal.content",item.assigneeTotal,"7","319","320","null","assignees.assignee.assigneeTotal",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:legalType then 
+                list_add(add_facts,fact_get("assignees.assignee.legalType",item.@tsip:legalType,"7","304","306","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.limitation then 
+                list_add(add_facts,fact_get("assignees.assignee.limitation.content",item.limitation,"7","323","324","null","assignees.assignee.limitation",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.limitation.@tsip:type then 
+                list_add(add_facts,fact_get("assignees.assignee.limitation.type",item.limitation.@tsip:type,"7","323","325","null","assignees.assignee.limitation",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.forenames then 
+                list_add(add_facts,fact_get("assignees.assignee.name.forenames",item.name.forenames,"7","326","327","null","assignees.assignee.name",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.@tsip:form then 
+                list_add(add_facts,fact_get("assignees.assignee.name.nameTotal.form",item.name.nameTotal.@tsip:form,"7","328","330","null","assignees.assignee.name.nameTotal",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.refId then 
+                list_add(add_facts,fact_get("assignees.assignee.name.nameTotal.refId",item.name.nameTotal.refId,"7","328","332","null","assignees.assignee.name.nameTotal+F89",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.@tsip:src then 
+                list_add(add_facts,fact_get("assignees.assignee.name.nameTotal.src",item.name.nameTotal.@tsip:src,"7","328","331","null","assignees.assignee.name.nameTotal",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal then 
+                list_add(add_facts,fact_get("assignees.assignee.name.nameTotal.content",item.name.nameTotal,"7","328","329","null","assignees.assignee.name.nameTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.surname then 
+                list_add(add_facts,fact_get("assignees.assignee.name.surname",item.name.surname,"7","326","333","null","assignees.assignee.name",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.nationality then 
+                list_add(add_facts,fact_get("assignees.assignee.nationality",item.nationality,"7","304","335","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:no then 
+                list_add(add_facts,fact_get("assignees.assignee.no",item.@tsip:no,"7","304","309","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.refId then 
+                list_add(add_facts,fact_get("assignees.assignee.refId",item.refId,"7","304","308","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.residence then 
+                list_add(add_facts,fact_get("assignees.assignee.residence",item.residence,"7","304","334","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+        
+            if item.@tsip:src then 
+                list_add(add_facts,fact_get("assignees.assignee.src",item.@tsip:src,"7","304","307","null","assignees.assignee",[1, 1, array_index]))
+            end if 
+            
+            if array_index = 1 then
+                xmlString := "<assignees  tsip:action='new'>"
+                items2 := assignees as list 
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</assignees>"])
+                list_add(add_facts,fact_get("assignees.assignee.content",xmlString,"7","304","343","null","assignees.assignee",[1, 1, 1]))
+            end if 
+            
+            relationship_node.additionalFacts := add_facts
+            list_add(relationships, relationship_node)
+            array_index := array_index + 1
+        end loop 
+    end if 
+    ######### END FACT: ASSIGNEES ############################
+
+    
+    ######### START FACT: INVENTORS ############################
+    if input.patent.inventors then 
+        inventors := input.patent.inventors
+        items := inventors as list 
+        
+
+        array_index := 1 
+        for item in items loop
+            relationship_node := {}
+            relationship_node.relatedToIdScheme := ""
+            relationship_node.updatedBy := ""
+            relationship_node.confidence := "100"
+            relationship_node.queued := ""
+            relationship_node.parentArrayIndex := [1, 1]
+            relationship_node.predicate := "inventor_of"
+            relationship_node.sourcePGUID := "urn:source:000000000000000000000000000007"
+            relationship_node.groupPGUID := "urn:fact:patent:000000000000000000000000000344"
+            relationship_node.wipFlag := false
+            relationship_node.relatedToId := ""
+            relationship_node.factPGUID := "urn:fact:patent:000000000000000000000000000345"
+            relationship_node.action := "add"
+            relationship_node.arrayIndex := array_index 
+            add_facts := list_new()
+                    
+            if item.address.addressLine.@tsip:no then 
+                list_add(add_facts,fact_get("inventors.inventor.address.addressLine.no",item.address.addressLine.@tsip:no,"7","350","351","null","inventors.inventor.address.addressLine",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.address.addressLine then 
+                list_add(add_facts,fact_get("inventors.inventor.address.addressLine.content",item.address.addressLine,"7","350","352","null","inventors.inventor.address.addressLine",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.addressTotal then 
+                list_add(add_facts,fact_get("inventors.inventor.address.addressTotal",item.address.addressTotal,"7","348","349","null","inventors.inventor.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.city then 
+                list_add(add_facts,fact_get("inventors.inventor.address.city",item.address.city,"7","348","353","null","inventors.inventor.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.countryCode then 
+                list_add(add_facts,fact_get("inventors.inventor.address.countryCode",item.address.countryCode,"7","348","354","null","inventors.inventor.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.postalCode then 
+                list_add(add_facts,fact_get("inventors.inventor.address.postalCode",item.address.postalCode,"7","348","356","null","inventors.inventor.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.address.state then 
+                list_add(add_facts,fact_get("inventors.inventor.address.state",item.address.state,"7","348","355","null","inventors.inventor.address",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.inventorTotal.@tsip:form then 
+                list_add(add_facts,fact_get("inventors.inventor.inventorTotal.form",item.inventorTotal.@tsip:form,"7","357","359","null","inventors.inventor.inventorTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.inventorTotal.refId then 
+                list_add(add_facts,fact_get("inventors.inventor.inventorTotal.refId",item.inventorTotal.refId,"7","357","360","null","inventors.inventor.inventorTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.inventorTotal then 
+                list_add(add_facts,fact_get("inventors.inventor.inventorTotal.content",item.inventorTotal,"7","357","358","null","inventors.inventor.inventorTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.limitation then 
+                list_add(add_facts,fact_get("inventors.inventor.limitation.content",item.limitation,"7","361","362","null","inventors.inventor.limitation",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.limitation.@tsip:type then 
+                list_add(add_facts,fact_get("inventors.inventor.limitation.type",item.limitation.@tsip:type,"7","361","363","null","inventors.inventor.limitation",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.forenames then 
+                list_add(add_facts,fact_get("inventors.inventor.name.forenames",item.name.forenames,"7","364","365","null","inventors.inventor.name",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.@tsip:form then 
+                list_add(add_facts,fact_get("inventors.inventor.name.nameTotal.form",item.name.nameTotal.@tsip:form,"7","366","368","null","inventors.inventor.name.nameTotal",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.refId then 
+                list_add(add_facts,fact_get("inventors.inventor.name.nameTotal.refId",item.name.nameTotal.refId,"7","366","370","null","inventors.inventor.name.nameTotal",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal.@tsip:src then 
+                list_add(add_facts,fact_get("inventors.inventor.name.nameTotal.src",item.name.nameTotal.@tsip:src,"7","366","369","null","inventors.inventor.name.nameTotal",[1, 1, array_index, 1, 1]))
+            end if 
+            
+        
+            if item.name.nameTotal then 
+                list_add(add_facts,fact_get("inventors.inventor.name.nameTotal.content",item.name.nameTotal,"7","366","367","null","inventors.inventor.name.nameTotal",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.name.surname then 
+                list_add(add_facts,fact_get("inventors.inventor.name.surname",item.name.surname,"7","364","371","null","inventors.inventor.name",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.nationality then 
+                list_add(add_facts,fact_get("inventors.inventor.nationality",item.nationality,"7","345","372","null","inventors.inventor",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.@tsip:no then 
+                list_add(add_facts,fact_get("inventors.inventor.no",item.@tsip:no,"7","345","347","null","inventors.inventor",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.refId then 
+                list_add(add_facts,fact_get("inventors.inventor.refId",item.refId,"7","345","346","null","inventors.inventor",[1, 1, array_index, 1]))
+            end if 
+            
+        
+            if item.residence then 
+                list_add(add_facts,fact_get("inventors.inventor.residence",item.residence,"7","345","373","null","inventors.inventor",[1, 1, array_index, 1]))
+            end if 
+    
+            if array_index = 1 then 
+                items2 := inventors as list 
+                xmlString := "<inventors  tsip:action='new'>"
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</inventors>"])
+                list_add(add_facts,fact_get("inventors.inventor.content",xmlString,"7","345","374","null","inventors.inventor",[1, 1]))
+            end if 
+
+            relationship_node.additionalFacts := add_facts
+            list_add(relationships, relationship_node)
+            array_index := array_index + 1
+        end loop 
+
+
+    end if 
+    ######### END FACT: INVENTORS ############################
+
+    ######### START FACT: CLASSIFICATIONCPCCURRENT ############################
+    if input.patent.classificationCpcCurrent then 
+        classificationCpcCurrent := input.patent.classificationCpcCurrent
+        items := classificationCpcCurrent as list 
+        array_index := 1 
+        
+        for item in items loop
+            relationship_node := {}
+            relationship_node.relatedToIdScheme := ""
+            relationship_node.updatedBy := ""
+            relationship_node.confidence := "100"
+            relationship_node.queued := ""
+            relationship_node.parentArrayIndex := [1, 1]
+            relationship_node.predicate := "classification_of"
+            relationship_node.sourcePGUID := "urn:source:000000000000000000000000000007"
+            relationship_node.groupPGUID := "urn:fact:patent:000000000000000000000000000663"
+            relationship_node.wipFlag := false
+            relationship_node.relatedToId := ""
+            relationship_node.factPGUID := "urn:fact:patent:000000000000000000000000000710"
+            relationship_node.action := "add"
+            relationship_node.arrayIndex := array_index 
+            add_facts := list_new()
+            
+            if item.@tsip:actionDate then 
+                fact_obj := fact_get("classifications.classification.classificationActionDate",item.@tsip:actionDate,"7","710","669","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+
+        
+            if item.@tsip:applied then 
+                fact_obj := fact_get("classifications.classification.classificationDataSource",item.@tsip:applied,"7","710","670","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.error then 
+                fact_obj := fact_get("classifications.classification.classificationError",item.error,"7","710","679","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:status then 
+                fact_obj := fact_get("classifications.classification.classificationStatus",item.@tsip:status,"7","710","672","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:level then 
+                fact_obj := fact_get("classifications.classification.classificationLevel",item.@tsip:level,"7","710","671","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts, fact_obj)
+            end if 
+            
+        
+            if item.linker then 
+                fact_obj := fact_get("classifications.classification.classificationLinker",item.linker,"7","710","678","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:office then 
+                fact_obj := fact_get("classifications.classification.classificationGeneratingOffice",item.@tsip:office,"7","710","673","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:position then 
+                fact_obj := fact_get("classifications.classification.classificationSymbolPosition",item.@tsip:position,"7","710","674","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.rangeFrom then 
+                fact_obj := fact_get("classifications.classification.classificationRangeFrom",item.rangeFrom,"7","710","680","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.rangeTo then 
+                fact_obj := fact_get("classifications.classification.classificationRangeTo",item.rangeTo,"7","710","681","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:schemeOrigin then 
+                fact_obj := fact_get("classifications.classification.classificationSchemeOrigin",item.@tsip:schemeOrigin,"7","710","687","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:scope then 
+                fact_obj := fact_get("classifications.classification.classificationScope",item.@tsip:scope,"7","710","676","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.cpc then 
+                fact_obj := fact_get("classifications.classification.classificationText",item.cpc,"7","710","667","null","classifications.classification",[1, 1])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:version then 
+                fact_obj := fact_get("classifications.classification.classificationVersionIndicationDate",item.@tsip:version,"7","710","677","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "CpcCurrent"            
+                list_add(add_facts,fact_obj)
+            end if 
+            
+            
+            if array_index = 1 then
+                xmlString := "<classificationCpcCurrent  tsip:action='new'>"
+                items2 := classificationCpcCurrent as list 
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</classificationCpcCurrent>"])
+                fact_obj := fact_get("classifications.classification.content",xmlString,"7","710","666","null","classifications.classification",[1, 1])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+                
+                fact_obj := fact_get("classifications.classification.classificationInstance","CpcCurrent","7","710","664","null","classifications.classification",[1, 1])
+                fact_obj.input := "CpcCurrent"
+                list_add(add_facts,fact_obj)
+                
+                fact_obj := fact_get("classifications.classification.classificationScheme","Cpc","7","710","665","null","classifications.classification",[1, 1])
+                fact_obj.input := "CpcCurrent"                
+                list_add(add_facts,fact_obj)
+
+            end if 
+            relationship_node.additionalFacts := add_facts
+            list_add(classification_relationships, relationship_node)
+            array_index := array_index + 1
+        end loop 
+
+    end if 
+    ######### END FACT: CLASSIFICATIONCPCCURRENT ############################
+    
+    ######### START FACT: CLASSIFICATIONCPC ############################
+    if input.patent.classificationCpc then 
+        classificationCpc := input.patent.classificationCpc
+        items := classificationCpc as list 
+        
+        array_index := 1
+        for item in items loop 
+            relationship_node := list_get(classification_relationships, array_index - 1)
+            add_facts := relationship_node.additionalFacts
+            
+            if item.@tsip:actionDate then 
+                fact_obj := fact_get("classifications.classification.classificationActionDate",item.@tsip:actionDate,"7","710","669","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:applied then 
+                fact_obj := fact_get("classifications.classification.classificationDataSource",item.@tsip:applied,"7","710","670","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.error then 
+                fact_obj := fact_get("classifications.classification.classificationError",item.error,"7","710","679","null","classifications.classification",[1, 1, array_index, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:level then 
+                fact_obj := fact_get("classifications.classification.classificationLevel",item.@tsip:level,"7","710","671","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.linker then 
+                fact_obj := fact_get("classifications.classification.classificationLinker",item.linker,"7","710","678","null","classifications.classification",[1, 1, array_index, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:office then 
+                fact_obj := fact_get("classifications.classification.classificationGeneratingOffice",item.@tsip:office,"7","710","673","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:position then 
+                fact_obj := fact_get("classifications.classification.classificationSymbolPosition",item.@tsip:position,"7","710","674","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.rangeFrom then 
+                fact_obj := fact_get("classifications.classification.classificationRangeFrom",item.rangeFrom,"7","710","680","null","classifications.classification",[1, 1, array_index, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.rangeTo then 
+                fact_obj := fact_get("classifications.classification.classificationRangeTo",item.rangeTo,"7","710","681","null","classifications.classification",[1, 1, array_index, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:schemeOrigin then 
+                fact_obj := fact_get("classifications.classification.classificationSchemeOrigin",item.@tsip:schemeOrigin,"7","710","687","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:scope then 
+                fact_obj := fact_get("classifications.classification.classificationScope",item.@tsip:scope,"7","710","676","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if     
+            
+            
+            if item.cpc then 
+                fact_obj := fact_get("classifications.classification.classificationText",item.cpc,"7","710","667","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:version then 
+                fact_obj := fact_get("classifications.classification.classificationVersionIndicationDate",item.@tsip:version,"7","710","677","null","classifications.classification",[1, 1, array_index])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+            end if 
+
+
+            if array_index = 1 then
+                xmlString := "<classificationCpc tsip:action='new'>"
+                items2 := classificationCpc as list 
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</classificationCpc>"])
+
+                fact_obj := fact_get("classifications.classification.content",xmlString,"7","710","666","null","classifications.classification",[1, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+                
+                fact_obj := fact_get("classifications.classification.classificationInstance","Cpc","7","710","664","null","classifications.classification",[1, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+                
+                fact_obj := fact_get("classifications.classification.classificationScheme","Cpc","7","710","665","null","classifications.classification",[1, 1])
+                fact_obj.input := "Cpc"
+                list_add(add_facts,fact_obj)
+
+            end if 
+            
+            array_index := array_index  + 1 
+        end loop 
+
+
+    end if 
+    ######### END FACT: CLASSIFICATIONCPC ############################
+
+    ######### START FACT: CLASSIFICATIONIPC ############################
+    if input.patent.classificationIpc then 
+        classificationIpc := input.patent.classificationIpc
+        items := classificationIpc as list 
+
+        array_index := 1 
+        for item in items loop 
+            relationship_node := list_get(classification_relationships, array_index - 1)
+            add_facts := relationship_node.additionalFacts
+            
+            
+            if item.@tsip:actionDate then 
+                fact_obj := fact_get("classifications.classification.classificationActionDate",item.@tsip:actionDate,"7","710","669","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:applied then 
+                fact_obj := fact_get("classifications.classification.classificationDataSource",item.@tsip:applied,"7","710","670","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:classLevel then 
+                fact_obj := fact_get("classifications.classification.classificationLevel",item.@tsip:classLevel,"7","710","671","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.error then 
+                fact_obj := fact_get("classifications.classification.classificationError",item.error,"7","710","679","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:level then 
+                fact_obj := fact_get("classifications.classification.classificationStatus",item.@tsip:level,"7","710","672","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.linker then 
+                fact_obj := fact_get("classifications.classification.classificationLinker",item.linker,"7","710","678","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:office then 
+                fact_obj := fact_get("classifications.classification.classificationGeneratingOffice",item.@tsip:office,"7","710","673","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:position then 
+                fact_obj := fact_get("classifications.classification.classificationSymbolPosition",item.@tsip:position,"7","710","674","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:rank then 
+                fact_obj := fact_get("classifications.classification.classificationRank",item.@tsip:rank,"7","710","675","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:scope then 
+                fact_obj := fact_get("classifications.classification.classificationScope",item.@tsip:scope,"7","710","676","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.ipc then 
+                fact_obj := fact_get("classifications.classification.classificationText",item.ipc,"7","710","667","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:type then 
+                fact_obj := fact_get("classifications.classification.classificationType",item.@tsip:type,"7","710","668","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:version then 
+                fact_obj := fact_get("classifications.classification.classificationVersionIndicationDate",item.@tsip:version,"7","710","677","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+            end if 
+
+            if array_index = 1 then
+                xmlString := "<classificationIpc tsip:action='new'>"
+                items2 := classificationIpc as list 
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</classificationIpc>"])
+
+
+                fact_obj := fact_get("classifications.classification.content",xmlString,"7","710","666","null","classifications.classification",[1, 1])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)    
+                
+
+                fact_obj := fact_get("classifications.classification.classificationInstance","Ipc","7","710","664","null","classifications.classification",[1, 1])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)
+                
+                
+                fact_obj := fact_get("classifications.classification.classificationScheme","Ipc","7","710","665","null","classifications.classification",[1, 1])
+                fact_obj.input := "Ipc"
+                list_add(add_facts,fact_obj)        
+                
+            end if 
+            
+            array_index := array_index + 1
+        end loop 
+    end if 
+    ######### END FACT: CLASSIFICATIONIPC ############################
+    
+    ######### START FACT: CLASSIFICATIONIPCCURRENT ############################
+    if input.patent.classificationIpcCurrent then 
+        classificationIpcCurrent := input.patent.classificationIpcCurrent
+        items := classificationIpcCurrent as list 
+
+
+        array_index := 1 
+        for item in items loop 
+            relationship_node := list_get(classification_relationships, array_index - 1)
+            add_facts := relationship_node.additionalFacts
+                    
+            if item.@tsip:actionDate then 
+                fact_obj := fact_get("classifications.classification.classificationActionDate",item.@tsip:actionDate,"7","710","669","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:applied then 
+                fact_obj := fact_get("classifications.classification.classificationDataSource",item.@tsip:applied,"7","710","670","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:classLevel then 
+                fact_obj := fact_get("classifications.classification.classificationLevel",item.@tsip:classLevel,"7","710","671","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.error then 
+                fact_obj := fact_get("classifications.classification.classificationError",item.error,"7","710","679","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:level then 
+                fact_obj := fact_get("classifications.classification.classificationStatus",item.@tsip:level,"7","710","672","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.linker then 
+                fact_obj := fact_get("classifications.classification.classificationLinker",item.linker,"7","710","678","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:office then 
+                fact_obj := fact_get("classifications.classification.classificationGeneratingOffice",item.@tsip:office,"7","710","673","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:position then 
+                fact_obj := fact_get("classifications.classification.classificationSymbolPosition",item.@tsip:position,"7","710","674","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:rank then 
+                fact_obj := fact_get("classifications.classification.classificationRank",item.@tsip:rank,"7","710","675","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:scope then 
+                fact_obj := fact_get("classifications.classification.classificationScope",item.@tsip:scope,"7","710","676","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.ipc then 
+                fact_obj := fact_get("classifications.classification.classificationText",item.ipc,"7","710","667","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:type then 
+                fact_obj := fact_get("classifications.classification.classificationType",item.@tsip:type,"7","710","668","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+        
+            if item.@tsip:version then 
+                fact_obj := fact_get("classifications.classification.classificationVersionIndicationDate",item.@tsip:version,"7","710","677","null","classifications.classification",[1,1,array_index])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+
+            if array_index = 1 then
+                xmlString := "<classificationIpcCurrent tsip:action='new'>"
+                items2 := classificationIpcCurrent as list 
+                for item2 in items2 loop
+                    xmlString := concat([xmlString, item2.xml])
+                end loop 
+                xmlString := concat([xmlString, "</classificationIpcCurrent>"])
+                
+                
+                fact_obj := fact_get("classifications.classification.content",xmlString,"7","710","666","null","classifications.classification",[1,1])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+                
+        
+                fact_obj := fact_get("classifications.classification.classificationInstance","Ipc","7","710","664","null","classifications.classification",[1,1])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            
+        
+                fact_obj := fact_get("classifications.classification.classificationScheme","Ipc","7","710","665","null","classifications.classification",[1,1])
+                fact_obj.input := "IpcCurrent"
+                list_add(add_facts,fact_obj)
+            end if 
+            
+            array_index := array_index + 1
+        end loop 
+
+    end if 
+    ######### END FACT: CLASSIFICATIONIPCCURRENT ############################
+    
+    # START: adding list of relationships node, that belong to classification only, to the relationship list ######
+    for item in classification_relationships loop 
+        list_add(relationships, item)
+    end loop 
+    # END ###################################################################
+    
+    ######### START FACT: AGENTS ############################
+    if input.patent.agents then
+        items := input.patent.agents as list
+		xmlString := "<agents tsip:action='new'>"
+		
+        array_index := 1 
+        for item in items loop 
+            relationship_node := {}
+            relationship_node.relatedToIdScheme := ""
+            relationship_node.updatedBy := ""
+            relationship_node.confidence := "100"
+            relationship_node.queued := ""
+            relationship_node.parentArrayIndex := [1, 1]
+            relationship_node.predicate := "agent_of"
+            relationship_node.sourcePGUID := "urn:source:000000000000000000000000000007"
+            relationship_node.groupPGUID := "urn:fact:patent:000000000000000000000000000220"
+            relationship_node.wipFlag := false
+            relationship_node.relatedToId := ""
+            relationship_node.factPGUID := "urn:fact:patent:000000000000000000000000000221"
+            relationship_node.action := "add"
+            relationship_node.arrayIndex := array_index 
+            add_facts := list_new()
+            
+            if item.@tsip:agentType then 
+				fact_obj := fact_get("agents.agent.type",item.@tsip:agentType,"7","221","222","null","agents.agent",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts, fact_obj)	
+			end if 
+            
+             if item.name.nameTotal then  
+                fact_obj := fact_get("agents.agent.name.nameTotal.form",item.name.nameTotal.@tsip:form,"7","231","232","null","agents.agent.name.nameTotal",[1,1,array_index,1,1])
+                fact_obj.language := "null"
+                fact_obj.input := "null"
+                list_add(add_facts, fact_obj)
+                
+                fact_obj := fact_get("agents.agent.name.nameTotal.text",item.name.nameTotal,"7","231","725","null","agents.agent.name.nameTotal",[1,1,array_index,1,1])
+                fact_obj.language := "null"
+                fact_obj.input := "null"
+                list_add(add_facts, fact_obj)
+            end if
+            
+            if item.agentTotal then
+                fact_obj := fact_get("agents.agent.agentTotal.Content",item.agentTotal,"7","225","226","null","agents.agent.agentTotal",[1,1,array_index,1])
+                fact_obj.language := "null"
+                fact_obj.input := "null"
+                list_add(add_facts, fact_obj)
+            end if
+        
+            
+            for item2 in items loop 
+                xmlString := concat([xmlString, item2.xml])
+            end loop 
+            
+            xmlString := concat([xmlString, "</agents>"])
+            fact_obj := fact_get("agents.agent.Content",xmlString,"7","221","248","null","agents.agent",[1,1,array_index])
+            fact_obj.language := "null"
+            fact_obj.input := "null"
+            list_add(add_facts, fact_obj)
+            
+			
+			relationship_node.additionalFacts := add_facts
+            list_add(relationships, relationship_node)
+            array_index := array_index + 1
+        end loop
+    end if
+    ######### END FACT: AGENTS ############################
+	
+	######### START FACT: EXAMINERS ############################
+	if input.patent.examiners then 
+		examiners := input.patent.examiners
+		items := examiners as list 
+		xmlString := "<examiners  tsip:action='new'>"
+
+		array_index := 1 
+		for item in items loop 
+			relationship_node := {}
+            relationship_node.relatedToIdScheme := ""
+            relationship_node.updatedBy := ""
+            relationship_node.confidence := "100"
+            relationship_node.queued := ""
+            relationship_node.parentArrayIndex := [1, 1]
+            relationship_node.predicate := "examiner_of"
+            relationship_node.sourcePGUID := "urn:source:000000000000000000000000000007"
+            relationship_node.groupPGUID := "urn:fact:patent:000000000000000000000000000375"
+            relationship_node.wipFlag := false
+            relationship_node.relatedToId := ""
+            relationship_node.factPGUID := "urn:fact:patent:000000000000000000000000000376"
+            relationship_node.action := "add"
+            relationship_node.arrayIndex := array_index 
+            add_facts := list_new()
+					
+			if item.address.addressLine.@tsip:no then 
+				fact_obj := fact_get("examiners.examiner.address.addressLine.no",item.address.addressLine.@tsip:no,"7","396","398","","examiners.examiner.address.addressLine",[1,1,array_index,1,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.addressLine then 
+				fact_obj := fact_get("examiners.examiner.address.addressLine.content",item.address.addressLine,"7","396","397","","examiners.examiner.address.addressLine",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.addressTotal then 
+				fact_obj := fact_get("examiners.examiner.address.addressTotal",item.address.addressTotal,"7","390","391","","examiners.examiner.address",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.city then 
+				fact_obj := fact_get("examiners.examiner.address.city",item.address.city,"7","390","392","","examiners.examiner.address",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.countryCode then 
+				fact_obj := fact_get("examiners.examiner.address.countryCode",item.address.countryCode,"7","390","393","","examiners.examiner.address",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.postalCode then 
+				fact_obj := fact_get("examiners.examiner.address.postalCode",item.address.postalCode,"7","390","395","","examiners.examiner.address",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.address.state then 
+				fact_obj := fact_get("examiners.examiner.address.state",item.address.state,"7","390","394","","examiners.examiner.address",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.examinerNumber then 
+				fact_obj := fact_get("examiners.examiner.examinerNumber",item.examinerNumber,"7","376","400","","examiners.examiner",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.examinerTotal.@tsip:form then 
+				fact_obj := fact_get("examiners.examiner.examinerTotal.form",item.examinerTotal.@tsip:form,"7","380","382","","examiners.examiner.examinerTotal",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.examinerTotal.refId then 
+				fact_obj := fact_get("examiners.examiner.examinerTotal.refId",item.examinerTotal.refId,"7","380","383","","examiners.examiner.examinerTotal",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.examinerTotal then 
+				fact_obj := fact_get("examiners.examiner.examinerTotal.content",item.examinerTotal,"7","380","381","","examiners.examiner.examinerTotal",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.name.forenames then 
+				fact_obj := fact_get("examiners.examiner.name.foreNames",item.name.forenames,"7","384","385","","examiners.examiner.name",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.name.nameTotal.@tsip:form then 
+				fact_obj := fact_get("examiners.examiner.name.nameTotal.form",item.name.nameTotal.@tsip:form,"7","386","388","","examiners.examiner.name.nameTotal",[1,1,array_index,1,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.name.nameTotal.refId then 
+				fact_obj := fact_get("examiners.examiner.name.nameTotal.refId",item.name.nameTotal.refId,"7","386","389","","examiners.examiner.name.nameTotal",[1,1,array_index,1,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.name.nameTotal then 
+				fact_obj := fact_get("examiners.examiner.name.nameTotal.text",item.name.nameTotal,"7","386","726","","examiners.examiner.name.nameTotal",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.name.surname then 
+				fact_obj := fact_get("examiners.examiner.name.surName",item.name.surname,"7","384","387","","examiners.examiner.name",[1,1,array_index,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.@tsip:no then 
+				fact_obj := fact_get("examiners.examiner.no",item.@tsip:no,"7","376","379","","examiners.examiner",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.refId then 
+				fact_obj := fact_get("examiners.examiner.refId",item.refId,"7","376","378","","examiners.examiner",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.@tsip:type then 
+				fact_obj := fact_get("examiners.examiner.type",item.@tsip:type,"7","376","377","","examiners.examiner",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+
+			if item.unit then 
+				fact_obj := fact_get("examiners.examiner.unit",item.unit,"7","376","399","","examiners.examiner",[1,1,array_index])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+
+			if array_index = 1 then 
+				for item2 in items loop 
+					xmlString := concat([xmlString, item2.xml])
+				end loop 
+				
+				xmlString := concat([xmlString, "</examiners>"])
+
+				fact_obj := fact_get("examiners.examiner.content",xmlString,"7","376","401","","examiners.examiner",[1,1])
+				fact_obj.language := "null"
+				fact_obj.input := "null"
+				list_add(add_facts,fact_obj)
+			end if 
+			
+			
+			array_index := array_index + 1
+
+			relationship_node.additionalFacts := add_facts
+			list_add(relationships, relationship_node)
+		end loop 
+	end if 
+	######### END FACT: EXAMINERS ############################
+    
+
+    output.patent.relationships := relationships
+end rule
+
+begin rule "outer nodes"
+    output.patent.lineage := ["urn:asset:7:e59c99fd-5916-420a-9a78-3131eeeeabd4"]  
+    output.patent.confidence := 80
+    output.patent.PGUID := ""
+    output.patent.sourcePGUID := "urn:source:000000000000000000000000000007"
+    output.patent.provenance := "USPTO"
+	output.patent.dataAsset.assetID :=  "urn:asset:18"
+	output.patent.dataAsset.name := "patents"
+	output.patent.dataAsset.version := "1.0.0"
+    output.patent.itemStatus := "Active"
+	output.patent.sourceName := "First Level Data"
+	output.patent.usageRights := "null"
+	output.patent.info.timeStamp := "2019-03-22T07:00:00.0Z"
+    output.patent.info.ID := "urn:uuid:a07c9280-4766-4435-9ced-3d552547be50"
+	output.patent.info.version := "1.0.0"
+end rule
